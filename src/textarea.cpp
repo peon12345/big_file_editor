@@ -11,8 +11,6 @@
 
 TextArea::TextArea(QWidget * wdg) : QTextEdit(wdg), m_file(nullptr),m_maxValueScrollBar(0)
 {
-
-
 }
 
 TextArea::~TextArea()
@@ -22,12 +20,15 @@ TextArea::~TextArea()
 
 void TextArea::setFile(File* file)
 {
+
     m_file = file;
+
+      connect(m_file,&File::needUpdateText,this,&TextArea::updateText); //файл достал кусок текста и передает его  в TextArea
+
     if(file->isMassive()){
 
         connect(this->verticalScrollBar(),&QScrollBar::valueChanged,m_file,&File::readBlock); //связь - слот на изменение скроллбара
-        connect(this->verticalScrollBar(),&QScrollBar::valueChanged,this,&TextArea::test);
-        connect(m_file,&File::needUpdateText,this,&TextArea::updateText); //файл достал кусок текста и передает его  в TextArea
+        //connect(this->verticalScrollBar(),&QScrollBar::valueChanged,this,&TextArea::test);
 
         m_file->readBlock(0); // прочитаем какую то малую часть, и вставим текст
 
@@ -37,7 +38,6 @@ void TextArea::setFile(File* file)
         std::thread t(&TextArea::adaptScrollBarBasedFile,this, m_file);
         t.detach();
     }else {
-        connect(m_file,&File::needUpdateText,this,&TextArea::updateText);
         m_file->readBlock(0);
 
         //вместо этого должно быть m_file->readAllData() , но этот метод не работает...
@@ -76,6 +76,7 @@ void TextArea::adaptScrollBarBasedFile(File* file)
 {
     uint64_t lines = file->countLines();
     setRangeScrollBar(0,lines);
+
 }
 
 void TextArea::adaptScrollBar(int lines)
@@ -85,7 +86,7 @@ void TextArea::adaptScrollBar(int lines)
 
 void TextArea::adaptScrollBar(int lines, qint64 sizeFile)
 {
-    int maxValueScrollBar = std::ceil((lines * sizeFile) / File::SIZE_BLOCK); //возможна ошибка скролла,после округления
+    int maxValueScrollBar = std::ceil((lines * sizeFile) / File::BLOCK_SIZE); //возможна ошибка скролла,после округления
     setRangeScrollBar(0,maxValueScrollBar);
 }
 
@@ -115,6 +116,7 @@ void TextArea::updateText(const QString &text,int posScrollBar)
 
     qDebug() << "updateText" << m_maxValueScrollBar;
 }
+
 
 
 

@@ -1,22 +1,21 @@
 #include "file.h"
-
+#include <QDebug>
+#include <thread>
 
 File::File(const QString &path, QObject* object) : QFile(path,object),
     m_isMassiveFile(false),
-    m_totalLines(0)
+    m_totalLines(0),
+    m_textStream(this)
 {
     //здесь узнаем о файле , например, размер файла, нужно ли включать ленивую загрузку
 
-    if(sizeFile() > SIZE_BLOCK){ // порог для ленивой загрузки, нужно указавывать в настройках
+    if(sizeFile() > BLOCK_SIZE){ // порог для ленивой загрузки, нужно указавывать в настройках
         m_isMassiveFile = true;
     }
-
-    m_textStream = new QTextStream(this);
 
 }
 
 File::~File() {
-    delete m_textStream;
 }
 
 bool File::isMassive() const
@@ -31,8 +30,14 @@ qint64 File::sizeFile() const
 
 uint64_t File::countLines()
 {
+    m_linesMap.clear();
+
     uint64_t lines =  countInFile("\n");
-    setLinesInFile(lines);
+
+    if(lines >= 0){
+      setLinesInFile(lines);
+    }
+
     return lines;
 }
 
@@ -50,33 +55,37 @@ uint64_t File::countInFile(const QString &str)
     if(!seek(0)){
         return 0;
     }
-    if(str == '\n'){
-        m_linesMap.erase(m_linesMap.begin(),m_linesMap.end());
-    }
+
 
     uint64_t counter = 0;
     uint64_t currentSize = 0;
 
     QByteArray byteArray;
     while(!atEnd()){
-        byteArray = read(SIZE_BLOCK * 5); // 50mb
+
+
+      if(isOpen()){
+        std::unique_lock<std::mutex> ul(m_mutexReadFile);
+
+        byteArray = read(BLOCK_SIZE * 5); // 50mb
+
         for(int i = 0; i < byteArray.size();i++){
             if(str == byteArray.at(i)){
                 counter++;
-
                 if(str == '\n'){
                     m_linesMap.push_back(currentSize + i);
                 }
             }
-
         }
 
         currentSize += byteArray.size();
 
     }
+    }
 
+
+    qDebug() << "scroll range complete" << counter;
     return counter;
-
 }
 
 void File::setLinesInFile(uint64_t totalLines) const
@@ -86,26 +95,47 @@ void File::setLinesInFile(uint64_t totalLines) const
 
 QString File::readAllData()
 {
-    return m_textStream->read(SIZE_BLOCK);
+    return m_textStream.read(BLOCK_SIZE);
 }
 
 void File::readBlock(int posScrollBar)
 {
+
+  std::thread t([ this, posScrollBar](){
+
+   // exit(2);
+    std::unique_lock<std::mutex> ul(m_mutexReadFile);
     if((size_t)posScrollBar < m_linesMap.size()){
         seek(m_linesMap.at(posScrollBar));
+
+      qDebug() << posScrollBar  << "posScrollBar";
+      qDebug() << m_linesMap.at(posScrollBar)  << "seek";
+
+
     }else if((size_t)posScrollBar > m_linesMap.size()){
         seek(m_linesMap.at(m_linesMap.size()-1));
+
+      qDebug() << posScrollBar  << "posScrollBar";
+      qDebug() << m_linesMap.at(posScrollBar)  << "seek";
+
+
     }else if(posScrollBar == 0){
         seek(0);
     }
 
     // QString text = read(SIZE_BLOCK);
-    QString text = m_textStream->read(SIZE_BLOCK);
+    QString text = m_textStream.read(BLOCK_SIZE);
 
-    needUpdateText(text,posScrollBar);
+    emit needUpdateText(text,posScrollBar);
+
+   });
+
+  t.detach();
 }
 
-void File::updateText(const QString &text, int posScrollBar)
+
+void File::close()
 {
-    emit needUpdateText(text,posScrollBar);
+  std::unique_lock<std::mutex> ul(m_mutexReadFile);
+  QFile::close();
 }

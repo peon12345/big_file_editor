@@ -6,148 +6,191 @@
 
 #include <QDebug>
 #include <QPushButton>
+#include <QDir>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+      , ui(new Ui::MainWindow)
 {
-    ui->setupUi(this);
+  ui->setupUi(this);
 
-    QPushButton *addTabButton = new QPushButton("+",ui->tabWidget);
+  QPushButton *addTabButton = new QPushButton("+",ui->tabWidget);
 
-    connect(addTabButton,&QPushButton::clicked,this,&MainWindow::addTextArea);
-    connect(ui->tabWidget,&QTabWidget::tabCloseRequested,this,&MainWindow::closeTab);
-    setWindowTitle("TopTeam Text Editor");
+  connect(addTabButton,&QPushButton::clicked,this,&MainWindow::addTextArea);
+  connect(ui->tabWidget,&QTabWidget::tabCloseRequested,this,&MainWindow::closeTab);
+  setWindowTitle("TopTeam Text Editor");
 
 
-    ui->tabWidget->setCornerWidget(addTabButton,Qt::TopLeftCorner);
-    ui->tabWidget->setTabsClosable(true);
-    ui->tabWidget->setMovable(true);
+  ui->tabWidget->setCornerWidget(addTabButton,Qt::TopLeftCorner);
+  ui->tabWidget->setTabsClosable(true);
+  ui->tabWidget->setMovable(true);
 
-    addTextArea();
+  addTextArea();
 }
 
 
 MainWindow::~MainWindow()
 {
-    delete ui;
-    while(m_textAreas.empty()){
-        delete m_textAreas.back();
-        m_textAreas.pop_back();
-    }
+  delete ui;
+  while(m_textAreas.empty()){
+    delete m_textAreas.back();
+    m_textAreas.pop_back();
+  }
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
-    Q_UNUSED(event);
-    //    for(auto& textArea : m_textAreas){
-    //    textArea->resize(textArea->width(),textArea->height());
-    //    }
+  Q_UNUSED(event);
+  //    for(auto& textArea : m_textAreas){
+  //    textArea->resize(textArea->width(),textArea->height());
+  //    }
 
-    TextArea& area = *m_textAreas.at(ui->tabWidget->currentIndex());
-    area.resize(area.width(),area.height());
+  TextArea& area = *m_textAreas.at(ui->tabWidget->currentIndex());
+  area.resize(area.width(),area.height());
 }
 
 int MainWindow::getNumDoc()
 {
-    //1 2 4 5
-    for(int i = 0 ; static_cast<size_t> (i) < m_counterNoNameDoc.size(); i++){
+  //1 2 4 5
+  for(int i = 0 ; static_cast<size_t> (i) < m_counterNoNameDoc.size(); i++){
 
-        if((i+1) != m_counterNoNameDoc.at(i)){
-            //int dif = counterNewDoc.at(i) - (i+1);
-            m_counterNoNameDoc.insert(m_counterNoNameDoc.begin() + i, i + 1);
-            return i+1;
+    if((i+1) != m_counterNoNameDoc.at(i)){
+      //int dif = counterNewDoc.at(i) - (i+1);
+      m_counterNoNameDoc.insert(m_counterNoNameDoc.begin() + i, i + 1);
+      return i+1;
 
-        }
     }
+  }
 
-    if(m_counterNoNameDoc.empty()){
-        m_counterNoNameDoc.push_back(1);
-        return m_counterNoNameDoc.back();
-    }else{
-        m_counterNoNameDoc.push_back( m_counterNoNameDoc.back() + 1 );
-        return m_counterNoNameDoc.back();
-    }
+  if(m_counterNoNameDoc.empty()){
+    m_counterNoNameDoc.push_back(1);
+    return m_counterNoNameDoc.back();
+  }else{
+    m_counterNoNameDoc.push_back( m_counterNoNameDoc.back() + 1 );
+    return m_counterNoNameDoc.back();
+  }
 }
 
 void MainWindow::addTextArea(int index)
 {
-    Q_UNUSED(index);
+  Q_UNUSED(index);
 
-    TextArea* area = new TextArea(this);
+  TextArea* area = new TextArea(this);
 
-    QString numDoc = QString::number(getNumDoc());
+  ui->tabWidget->addTab(area,"new "+QString::number(getNumDoc())+" ");
+  ui->tabWidget->setCurrentWidget(area);
 
-    ui->tabWidget->addTab(area,"new "+numDoc+" ");
-    ui->tabWidget->setCurrentWidget(area);
-
-    m_textAreas.push_back(area);
+  m_textAreas.push_back(area);
 }
+
+
+
+void createFile(){
+
+  QString pathTxtFile;
+
+  pathTxtFile  = QDir::currentPath();
+  pathTxtFile += QDir::separator();
+  pathTxtFile += "test.txt";
+
+  QFile file(pathTxtFile);
+  if(!file.open(QFile::WriteOnly)){
+    return void();
+  }
+
+  QTextStream stream(&file);
+
+  QString str;
+  QString icounter;
+  for(size_t i = 0; i < 19999999; ++i){
+    str.clear();
+    icounter.clear();
+    icounter = QString::number(i);
+
+    str += icounter + " " + icounter + " " + icounter + " " + icounter + " " + icounter + " " + icounter + " " + icounter + " " + icounter;
+    stream << str;
+    stream << '\n';
+  }
+  qDebug() << str;
+  file.close();
+  exit(0);
+
+}
+
+
 
 void MainWindow::on_actionTarget_1_2_triggered()
 {
-    QString pathFile = QFileDialog::getOpenFileName(0, "Open File", ""); //"*.txt " , если добавить это, будет искать только по этой маске
-    if(pathFile == ""){
-        return void();
-    }
 
-    if(!m_fileManager.openFile(pathFile)){
-        QMessageBox msg;
-        msg.setText("Ошибка");
-        msg.setInformativeText("Не удалось открыть файл!");
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.exec();
-        return void();
-    }
+  QString path;
+  // path = QDir::currentPath(); // потом раскоментить
+  path = "F:\big-text-viewer";
 
-    m_textAreas.at(ui->tabWidget->currentIndex())->setFile(m_fileManager.getFile());
+  //createFile();
 
-    int pos = ui->tabWidget->tabText(ui->tabWidget->currentIndex()).indexOf(" ");
-    int numDoc = ui->tabWidget->tabText(ui->tabWidget->currentIndex()).right(pos).toInt();
-    m_counterNoNameDoc.erase(std::remove(m_counterNoNameDoc.begin(), m_counterNoNameDoc.end(), numDoc), m_counterNoNameDoc.end());
 
-    int posSeparator = pathFile.lastIndexOf("/");
-    int dif = pathFile.length() - posSeparator;
-    QString fileName = pathFile.right(dif-1);
-    ui->tabWidget->setTabText(ui->tabWidget->currentIndex(),fileName);
+  QString pathFile = QFileDialog::getOpenFileName(0, "Open File", ""); //"*.txt " , если добавить это, будет искать только по этой маске
+  if(pathFile == ""){
+    return void();
+  }
+
+  if(!m_fileManager.openFile(pathFile)){
+    QMessageBox msg;
+    msg.setText("Ошибка");
+    msg.setInformativeText("Не удалось открыть файл!");
+    msg.setStandardButtons(QMessageBox::Ok);
+    msg.exec();
+    return void();
+  }
+
+  m_textAreas.at(ui->tabWidget->currentIndex())->setFile(m_fileManager.getFile());
+
+  int pos = ui->tabWidget->tabText(ui->tabWidget->currentIndex()).indexOf(" ");
+  int numDoc = ui->tabWidget->tabText(ui->tabWidget->currentIndex()).right(pos).toInt();
+  m_counterNoNameDoc.erase(std::remove(m_counterNoNameDoc.begin(), m_counterNoNameDoc.end(), numDoc), m_counterNoNameDoc.end());
+
+  int posSeparator = pathFile.lastIndexOf("/");
+  int dif = pathFile.length() - posSeparator;
+  QString fileName = pathFile.right(dif-1);
+  ui->tabWidget->setTabText(ui->tabWidget->currentIndex(),fileName);
 }
 
 void MainWindow::closeTab(int index)
 {
-    //не удалять из счетчика безымянных документов, если файл привязан, ведь у него уже есть имя
-    if(!m_textAreas.at(index)->fileIsAssigned()){
+  //не удалять из счетчика безымянных документов, если файл привязан, ведь у него уже есть имя
+  if(!m_textAreas.at(index)->fileIsAssigned()){
 
-        int pos = ui->tabWidget->tabText(index).indexOf(" ");
-        int numDoc = ui->tabWidget->tabText(index).right(pos).toInt();
+    int pos = ui->tabWidget->tabText(index).indexOf(" ");
+    int numDoc = ui->tabWidget->tabText(index).right(pos).toInt();
 
-        m_counterNoNameDoc.erase(std::remove(m_counterNoNameDoc.begin(), m_counterNoNameDoc.end(), numDoc), m_counterNoNameDoc.end());
-    }
+    m_counterNoNameDoc.erase(std::remove(m_counterNoNameDoc.begin(), m_counterNoNameDoc.end(), numDoc), m_counterNoNameDoc.end());
+  }
 
-    ui->tabWidget->removeTab(index);
-    m_fileManager.closeFile(index);
-    delete m_textAreas[index];
-    m_textAreas.erase(m_textAreas.begin() + index);
+  ui->tabWidget->removeTab(index);
+  m_fileManager.closeFile(index);
+  delete m_textAreas[index];
+  m_textAreas.erase(m_textAreas.begin() + index);
 
-    if(m_textAreas.empty()){
-        addTextArea();  // если последний элемент, то просто очищаем текстарею
-    }
+  if(m_textAreas.empty()){
+    addTextArea();  // если последний элемент, то просто очищаем текстарею
+  }
 
 }
 
 void MainWindow::slotAbout()
 {
-    AboutDialog dlg(this);
-    dlg.exec();
+  AboutDialog dlg(this);
+  dlg.exec();
 }
 
 void MainWindow::slotNew()
 {
-    addTextArea();
+  addTextArea();
 }
 
 void MainWindow::slotExit()
 {
-    exit(0);
+  exit(0);
 }
 
 

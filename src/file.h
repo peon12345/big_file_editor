@@ -2,6 +2,7 @@
 #include <QObject>
 #include <QFile>
 #include <QTextStream>
+#include <mutex>
 
 class File : public QFile
 {
@@ -24,20 +25,24 @@ public:
 
     QString readAllData(); // почему не работает этот метод, в упор не вижу
 
-    static constexpr int SIZE_BLOCK = 10485760; //10mb
+    static constexpr int BLOCK_SIZE = 10485760; //10mb
   private:
     bool m_isMassiveFile;
     mutable uint m_totalLines;
     std::vector<uint64_t> m_linesMap;
-    QTextStream* m_textStream;
+    QTextStream m_textStream;
 private:
     void setLinesInFile(uint64_t totalLines) const;
+private:
+    std::mutex m_mutexReadFile;
 public slots:
     void readBlock(int posScrollBar);
-    void updateText(const QString& text,int posScrollBar);
-
 signals:
     void needUpdateText(const QString& text,int posScrollBar);
+
+  // QIODevice interface
+public:
+  void close() override;
 };
 
 
