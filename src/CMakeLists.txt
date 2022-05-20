@@ -8,7 +8,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
@@ -19,13 +19,15 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
+        smartscroll.cpp
+        smartscroll.h
         aboutdialog.h
         aboutdialog.cpp
         aboutdialog.ui
         file.h
         file.cpp
-        filemanager.cpp
-        filemanager.h
+        tabitem.h
+        tabitem.cpp
         textarea.cpp
         textarea.h
 )

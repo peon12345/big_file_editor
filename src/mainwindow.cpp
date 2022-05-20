@@ -16,16 +16,16 @@ MainWindow::MainWindow(QWidget *parent)
 
   QPushButton *addTabButton = new QPushButton("+",ui->tabWidget);
 
-  connect(addTabButton,&QPushButton::clicked,this,&MainWindow::addTextArea);
+  connect(addTabButton,&QPushButton::clicked,this,&MainWindow::addNewItem);
   connect(ui->tabWidget,&QTabWidget::tabCloseRequested,this,&MainWindow::closeTab);
-  setWindowTitle("TopTeam Text Editor");
+  setWindowTitle("Text Editor");
 
 
   ui->tabWidget->setCornerWidget(addTabButton,Qt::TopLeftCorner);
   ui->tabWidget->setTabsClosable(true);
   ui->tabWidget->setMovable(true);
 
-  addTextArea();
+  addNewItem();
 }
 
 
@@ -45,13 +45,12 @@ void MainWindow::resizeEvent(QResizeEvent *event)
   //    textArea->resize(textArea->width(),textArea->height());
   //    }
 
-  TextArea& area = *m_textAreas.at(ui->tabWidget->currentIndex());
-  area.resize(area.width(),area.height());
+//  TabItem* area = m_textAreas.at(ui->tabWidget->currentIndex());
+//  area->resize(area->width(),area->height());
 }
 
 int MainWindow::getNumDoc()
 {
-  //1 2 4 5
   for(int i = 0 ; static_cast<size_t> (i) < m_counterNoNameDoc.size(); i++){
 
     if((i+1) != m_counterNoNameDoc.at(i)){
@@ -71,16 +70,16 @@ int MainWindow::getNumDoc()
   }
 }
 
-void MainWindow::addTextArea(int index)
+void MainWindow::addNewItem(int index)
 {
   Q_UNUSED(index);
 
-  TextArea* area = new TextArea(this);
+  TabItem* item = new TabItem(this);
 
-  ui->tabWidget->addTab(area,"new "+QString::number(getNumDoc())+" ");
-  ui->tabWidget->setCurrentWidget(area);
+  ui->tabWidget->addTab(item,"new "+QString::number(getNumDoc())+" ");
+  ui->tabWidget->setCurrentWidget(item);
 
-  m_textAreas.push_back(area);
+  m_textAreas.push_back(item);
 }
 
 
@@ -134,16 +133,27 @@ void MainWindow::on_actionTarget_1_2_triggered()
     return void();
   }
 
-  if(!m_fileManager.openFile(pathFile)){
-    QMessageBox msg;
-    msg.setText("Ошибка");
-    msg.setInformativeText("Не удалось открыть файл!");
-    msg.setStandardButtons(QMessageBox::Ok);
-    msg.exec();
-    return void();
+  File* file = new File(pathFile,this);
+
+  if(!file->open(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text)){
+      QMessageBox msg;
+      msg.setText("Ошибка");
+      msg.setInformativeText("Не удалось открыть файл!");
+      msg.setStandardButtons(QMessageBox::Ok);
+      msg.exec();
+      return void();
   }
 
-  m_textAreas.at(ui->tabWidget->currentIndex())->setFile(m_fileManager.getFile());
+
+ if( m_textAreas.at(ui->tabWidget->currentIndex())->empty()){
+
+  m_textAreas.at(ui->tabWidget->currentIndex())->setFile(file);
+   }else{
+
+  addNewItem();
+  m_textAreas.at(ui->tabWidget->currentIndex())->setFile(file);
+
+   }
 
   int pos = ui->tabWidget->tabText(ui->tabWidget->currentIndex()).indexOf(" ");
   int numDoc = ui->tabWidget->tabText(ui->tabWidget->currentIndex()).right(pos).toInt();
@@ -158,7 +168,7 @@ void MainWindow::on_actionTarget_1_2_triggered()
 void MainWindow::closeTab(int index)
 {
   //не удалять из счетчика безымянных документов, если файл привязан, ведь у него уже есть имя
-  if(!m_textAreas.at(index)->fileIsAssigned()){
+  if(!m_textAreas.at(index)->file()){
 
     int pos = ui->tabWidget->tabText(index).indexOf(" ");
     int numDoc = ui->tabWidget->tabText(index).right(pos).toInt();
@@ -167,12 +177,11 @@ void MainWindow::closeTab(int index)
   }
 
   ui->tabWidget->removeTab(index);
-  m_fileManager.closeFile(index);
   delete m_textAreas[index];
   m_textAreas.erase(m_textAreas.begin() + index);
 
   if(m_textAreas.empty()){
-    addTextArea();  // если последний элемент, то просто очищаем текстарею
+    addNewItem();  // если последний элемент, то просто очищаем текстарею
   }
 
 }
@@ -185,7 +194,7 @@ void MainWindow::slotAbout()
 
 void MainWindow::slotNew()
 {
-  addTextArea();
+  addNewItem();
 }
 
 void MainWindow::slotExit()

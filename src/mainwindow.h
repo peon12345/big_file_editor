@@ -1,7 +1,6 @@
 #pragma once
 #include <QMainWindow>
-#include "filemanager.h"
-#include "textarea.h"
+#include "tabitem.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -26,13 +25,12 @@ private slots:
 protected:
    void resizeEvent(QResizeEvent *event) override;
 private:
-    std::vector<TextArea*> m_textAreas;
-    FileManager m_fileManager;
+    std::vector<TabItem*> m_textAreas;
     Ui::MainWindow *ui;
 
     std::vector<int> m_counterNoNameDoc;
     int getNumDoc();
  private:
-    void addTextArea(int index = 0);
+    void addNewItem(int index = 0);
 };
 

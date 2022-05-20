@@ -5,29 +5,17 @@
 #include "file.h"
 
 
+
 class TextArea : public QTextEdit { // наследуемся, чтобы добавить возможность нумерации строк, подцветку выделенной строки и тд
-    Q_OBJECT
+  Q_OBJECT
 public:
-    TextArea(QWidget *wdg = nullptr);
+  TextArea(QWidget *wdg = nullptr);
+  bool empty() const;
+  void hideScroll();
+//protected:
+//  void resizeEvent(QResizeEvent *e) override;
+public slots:
+  void updateText(const QString& text);
 
-    // move оператор нужно реализовать и конструктор копирования?
-    ~TextArea();
-    void setFile(File* file);
-    bool fileIsAssigned();
-protected:
-  void resizeEvent(QResizeEvent *e) override;
-
- private:
-    File* m_file;
-    int m_maxValueScrollBar;
-private:
-    void adaptScrollBarBasedFile(File *file);
-    void adaptScrollBar(int lines);
-    void adaptScrollBar(int lines, qint64 sizeFile);
-    void setRangeScrollBar(int min,int max);
-
-private slots:
-    void test();
-    void updateText(const QString& text, int posScrollBar);
 };
 
