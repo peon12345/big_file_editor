@@ -22,7 +22,7 @@ public:
     void startLinesCount();
 
     //static constexpr int BLOCK_SIZE = 10485760; //10mb
-    static constexpr int BLOCK_SIZE = 1000; //10mb
+    static constexpr int BLOCK_SIZE = 10000; //10mb
   private:
     bool m_isMassiveFile;
     mutable uint m_totalLines;

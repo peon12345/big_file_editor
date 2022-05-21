@@ -55,6 +55,7 @@ void TextArea::hideScroll()
 
 void TextArea::updateText(const QString &text)
 {
+    qDebug() << "text updated";
     this->setText(text);
 }
 

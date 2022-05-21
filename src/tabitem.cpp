@@ -32,7 +32,12 @@ void TabItem::setFile(File* file)
      m_textArea.hideScroll();
      m_layout.addWidget(&m_scroll);
      connect(m_file,&File::linesCounted,&m_scroll,&SmartScroll::setMax);
+
+
      connect(m_textArea.verticalScrollBar(),&QScrollBar::valueChanged,[this](int value){
+
+
+         if(value != 0){
 
          if(m_tempValueScrollBar > value){ // значит воднялись наверх
 
@@ -46,29 +51,23 @@ void TabItem::setFile(File* file)
            m_scroll.setValue(m_scroll.value() + ( value - m_tempValueScrollBar));
 
 
-           qDebug() << "QTextEdit "<< value;
+           qDebug() << "QTextEdit "<< value << "max" << m_textArea.verticalScrollBar()->maximum();
            qDebug() << "m_scroll "<< m_scroll.value();
 
 
            if(value >= m_textArea.verticalScrollBar()->maximum()){
-
-
-               m_file->readBlock(value);
-               m_textArea.verticalScrollBar()->setValue(0);
+               m_file->readBlock(m_scroll.value());
              }
 
 
            }
 
-
         m_tempValueScrollBar = value;
+           }
        });
 
       connect(&m_scroll,&QScrollBar::sliderReleased,[this] () {
-
-          m_textArea.verticalScrollBar()->setValue(0);
-          m_file->readBlock(m_scroll.value());
-
+         m_file->readBlock(m_scroll.value());
         });
 
 
